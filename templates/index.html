@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Blockchain Adoption Simulator</title>
+</head>
+<body>
+    <h2>Blockchain Adoption Simulator</h2>
+    <form id="simulationForm">
+        User Count: <input type="number" id="user_count" value="100"><br>
+        Transaction Fee: <input type="number" id="transaction_fee" value="0.01" step="0.01"><br>
+        Marketing Effort: <input type="number" id="marketing_effort" value="1.0" step="0.1"><br>
+        Regulatory Environment: 
+        <select id="regulatory_env">
+            <option value="0">Hostile</option>
+            <option value="1" selected>Neutral</option>
+            <option value="2">Friendly</option>
+        </select><br>
+        <input type="submit" value="Run Simulation">
+    </form>
+
+    <!-- Place for the chart -->
+    <canvas id="userCountChart" width="400" height="200"></canvas>
+
+    <div id="results">
+        <!-- Results will be displayed here -->
+    </div>
+
+    <script>
+        let chart; // Declare outside the event listener
+
+        document.getElementById('simulationForm').addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent traditional form submission
+
+            // Extract data from the form
+            let user_count = document.getElementById('user_count').value;
+            let transaction_fee = document.getElementById('transaction_fee').value;
+            let marketing_effort = document.getElementById('marketing_effort').value;
+            let regulatory_env = document.getElementById('regulatory_env').value;
+
+            // Send data to Flask backend
+            fetch('/simulate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_count: user_count,
+                    transaction_fee: transaction_fee,
+                    marketing_effort: marketing_effort,
+                    regulatory_env: regulatory_env
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update the web page with the results
+                document.getElementById('results').innerText = "User Counts: " + data.user_counts;
+
+                // Destroy the previous chart if it exists
+                if (chart) {
+                    chart.destroy();
+                }
+
+                // Create the chart to visualize the results
+                let ctx = document.getElementById('userCountChart').getContext('2d');
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: data.user_counts.length}, (_, i) => i),
+                        datasets: [{
+                            label: 'User Counts Over Time',
+                            data: data.user_counts,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Time Steps'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'User Count'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
